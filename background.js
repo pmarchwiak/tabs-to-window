@@ -15,8 +15,38 @@ function refreshTabMenu(details) {
 
   browser.menus.create(
     {
+      id: "left-parent",
+      title: "Move Tabs to Left to Existing Window",
+      // title: browser.i18n.getMessage("menuItemRemoveMe"),
+      contexts: ["tab"],
+    },
+    onMenuCreated,
+  );
+
+  browser.menus.create(
+    {
       id: "right-new",
       title: "Move Tabs to Right to New Window",
+      // title: browser.i18n.getMessage("menuItemRemoveMe"),
+      contexts: ["tab"],
+    },
+    onMenuCreated,
+  );
+  
+  browser.menus.create(
+    {
+      id: "right-parent",
+      title: "Move Tabs to Right to Existing Window",
+      // title: browser.i18n.getMessage("menuItemRemoveMe"),
+      contexts: ["tab"],
+    },
+    onMenuCreated,
+  );
+
+  browser.menus.create(
+    {
+      id: "all-parent",
+      title: "Move All Tabs to Existing Window",
       // title: browser.i18n.getMessage("menuItemRemoveMe"),
       contexts: ["tab"],
     },
@@ -32,7 +62,26 @@ function refreshTabMenu(details) {
           browser.menus.create(
             {
               id: `right-window-${window.id}`,
-              title: `Move Tabs to Right to Window "${window.title}"`,
+              parentId: "right-parent",
+              title: `"${window.title}"`,
+              contexts: ["tab"],
+            }
+          );
+
+          browser.menus.create(
+            {
+              id: `left-window-${window.id}`,
+              parentId: "left-parent",
+              title: `"${window.title}"`,
+              contexts: ["tab"],
+            }
+          );
+
+          browser.menus.create(
+            {
+              id: `all-window-${window.id}`,
+              parentId: "all-parent",
+              title: `"${window.title}"`,
               contexts: ["tab"],
             }
           );
@@ -77,7 +126,9 @@ function onMenuItemClicked(menusOnClickData) {
 
   // Check if we're moving to an existing window
   let targetWindowId;
-  if (menuItemId.startsWith('right-window')) {
+  if (menuItemId.startsWith('right-window') || 
+      menuItemId.startsWith('left-window') || 
+      menuItemId.startsWith('all-window')) {
     // Match one or more digits at the end of the string
     const idMatch = menuItemId.match(/\d+$/);
     if (idMatch) {
@@ -100,6 +151,9 @@ function onMenuItemClicked(menusOnClickData) {
       }
       else if (menuItemId.startsWith("left")) {
         tabsToMove = tabs.filter((tab) => tab.index < clickedTab.index);
+      }
+      else if (menuItemId.startsWith("all")) {
+        tabsToMove = tabs;
       }
 
       if (tabsToMove) {
