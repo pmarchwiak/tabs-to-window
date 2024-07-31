@@ -1,0 +1,23 @@
+{
+  "browser_specific_settings": {
+    "gecko": {
+      "strict_min_version": "58.0a1"
+    }
+  },
+  "background": {
+      "scripts": ["background.js"]
+  },
+  "browser_action": {
+    "browser_style": true,
+    "default_title": "Tabs to Window",
+    "default_popup": "tabs.html"
+  },
+  "description": "A list of methods you can perform on a tab.",
+  "homepage_url": "https://github.com/pmarchwiak/tabs-to-window",
+  "manifest_version": 2,
+  "name": "Tabs to Window",
+  "permissions": [
+    "tabs"
+  ],
+  "version": "1.0"
+}
