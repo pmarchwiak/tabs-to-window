@@ -12,12 +12,15 @@
     "default_title": "Tabs to Window",
     "default_popup": "tabs.html"
   },
-  "description": "A list of methods you can perform on a tab.",
+  "description": "Move multiple tabs.",
+  "icons": {
+    "48": "icon-48.png"
+  },
   "homepage_url": "https://github.com/pmarchwiak/tabs-to-window",
   "manifest_version": 2,
   "name": "Tabs to Window",
   "permissions": [
-    "tabs"
+    "tabs", "menus"
   ],
   "version": "1.0"
 }
