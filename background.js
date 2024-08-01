@@ -15,8 +15,8 @@ function refreshTabMenu(details) {
 
   browser.menus.create(
     {
-      id: "left-parent",
-      title: "Move Tabs to Left to Existing Window",
+      id: "right-new",
+      title: "Move Tabs to Right to New Window",
       // title: browser.i18n.getMessage("menuItemRemoveMe"),
       contexts: ["tab"],
     },
@@ -25,8 +25,8 @@ function refreshTabMenu(details) {
 
   browser.menus.create(
     {
-      id: "right-new",
-      title: "Move Tabs to Right to New Window",
+      id: "left-parent",
+      title: "Move Tabs to Left to Existing Window",
       // title: browser.i18n.getMessage("menuItemRemoveMe"),
       contexts: ["tab"],
     },
@@ -53,17 +53,32 @@ function refreshTabMenu(details) {
     onMenuCreated,
   );
 
+  // TODO read this from an extension preference instead of hardcoding
+  let truncateWindowTitles = true;
+  let windowTitleOpeningTag = "[";
+  let windowTitleClosingTag = "]";
+
   browser.windows.getAll({populate: false, windowTypes: ["normal"],})
     .then(
       (windows) => {
         let nonFocusedWindows = windows.filter((window) => !window.focused);
         console.log(`found ${nonFocusedWindows.length} non focused windows`);
         for (const window of nonFocusedWindows) {
+
+          // Simplify window titles when used with the Window Title extension
+          let windowTitle = window.title;
+          if (truncateWindowTitles && windowTitle.startsWith(windowTitleOpeningTag)) {
+            let end = windowTitle.indexOf(windowTitleClosingTag);
+            if (end > 0) {
+              windowTitle = windowTitle.slice(0, end + 1);
+            }
+          }
+
           browser.menus.create(
             {
               id: `right-window-${window.id}`,
               parentId: "right-parent",
-              title: `"${window.title}"`,
+              title: windowTitle,
               contexts: ["tab"],
             }
           );
@@ -72,7 +87,7 @@ function refreshTabMenu(details) {
             {
               id: `left-window-${window.id}`,
               parentId: "left-parent",
-              title: `"${window.title}"`,
+              title: windowTitle,
               contexts: ["tab"],
             }
           );
@@ -81,7 +96,7 @@ function refreshTabMenu(details) {
             {
               id: `all-window-${window.id}`,
               parentId: "all-parent",
-              title: `"${window.title}"`,
+              title: windowTitle,
               contexts: ["tab"],
             }
           );
@@ -91,7 +106,7 @@ function refreshTabMenu(details) {
     );
 }
 
-function createWindowAndMoveTabs(tabIds) {
+function moveTabsToNewWindow(tabIds) {
   console.log(`creating a new window and moving tabs`);
   let firstTabId = tabIds[0];
   let creating = browser.windows.create({tabId: firstTabId});
@@ -167,21 +182,13 @@ function onMenuItemClicked(menusOnClickData) {
           moveTabsToWindow(tabIds, targetWindowId)
         }
         else {
-          createWindowAndMoveTabs(tabIds);
+          moveTabsToNewWindow(tabIds);
         }
       }
     }
   );
 }
 
-function handleMessage(request, sender, sendResponse) {
-  console.log(`A content script sent a message: ${request.action}`);
-  if (request.action === 'tabs-move-new') {
-    createWindowAndMoveTabs(request.tabIds);
-  }
-}
-
-browser.runtime.onMessage.addListener(handleMessage);
 browser.menus.onClicked.addListener(onMenuItemClicked);
 
 browser.runtime.onInstalled.addListener(refreshTabMenu);
