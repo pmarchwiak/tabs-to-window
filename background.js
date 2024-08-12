@@ -1,8 +1,9 @@
-function onMenuCreated() {
-  console.log(`menu created`);
+function onMenuCreated(id) {
+  console.log(`menu created with id ${id}`);
 }
 
-function refreshTabMenu(details) {
+async function refreshTabMenu(details) {
+  console.log('refreshTabMenu called');
   browser.menus.create(
     {
       id: "left-new",
@@ -53,11 +54,13 @@ function refreshTabMenu(details) {
     onMenuCreated,
   );
 
-  // TODO read this from an extension preference instead of hardcoding
-  let truncateWindowTitles = true;
-  let windowTitleOpeningTag = "[";
-  let windowTitleClosingTag = "]";
-
+  let options = await browser.storage.local.get(['truncate', 'truncateOpenTag', 'truncateCloseTag', 'truncateLength']);
+  console.log(`read options: ${JSON.stringify(options)}`)
+  let truncateWindowTitles = options.truncate || false;
+  let windowTitleOpeningTag = options.truncateOpenTag;
+  let windowTitleClosingTag = options.truncateCloseTag;
+  let windowTitleMaxLength = options.truncateLength || 0;
+ 
   browser.windows.getAll({populate: false, windowTypes: ["normal"],})
     .then(
       (windows) => {
@@ -67,10 +70,16 @@ function refreshTabMenu(details) {
 
           // Simplify window titles when used with the Window Title extension
           let windowTitle = window.title;
-          if (truncateWindowTitles && windowTitle.startsWith(windowTitleOpeningTag)) {
-            let end = windowTitle.indexOf(windowTitleClosingTag);
-            if (end > 0) {
-              windowTitle = windowTitle.slice(0, end + 1);
+          if (truncateWindowTitles) {
+            console.log("truncating...")
+            if (windowTitleOpeningTag && windowTitle.startsWith(windowTitleOpeningTag)) {
+              let end = windowTitle.indexOf(windowTitleClosingTag);
+              if (end > 0) {
+                windowTitle = windowTitle.slice(0, end + 1);
+              }
+            }
+            if (windowTitleMaxLength > 0 && windowTitle.length > windowTitleMaxLength) {
+              windowTitle = windowTitle.slice(0, windowTitleMaxLength) + "...";
             }
           }
 
@@ -189,8 +198,15 @@ function onMenuItemClicked(menusOnClickData) {
   );
 }
 
-browser.menus.onClicked.addListener(onMenuItemClicked);
+async function onMessageReceived(msg) {
+  console.log(`received msg ${JSON.stringify(msg)}`);
+  if (msg.action && msg.action === 'optionsSaved') {
+    refreshTabMenu(null);
+  }
+}
 
+browser.menus.onClicked.addListener(onMenuItemClicked);
+browser.runtime.onMessage.addListener(onMessageReceived);
 browser.runtime.onInstalled.addListener(refreshTabMenu);
 browser.windows.onCreated.addListener(refreshTabMenu);
 browser.windows.onFocusChanged.addListener(refreshTabMenu);
