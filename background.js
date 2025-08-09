@@ -1,8 +1,9 @@
-function onMenuCreated() {
-  console.log(`menu created`);
+function onMenuCreated(id) {
+  console.log(`menu created with id ${id}`);
 }
 
-function refreshTabMenu(details) {
+async function refreshTabMenu(details) {
+  console.log('refreshTabMenu called');
   browser.menus.create(
     {
       id: "left-new",
@@ -53,11 +54,6 @@ function refreshTabMenu(details) {
     onMenuCreated,
   );
 
-  // TODO read this from an extension preference instead of hardcoding
-  let truncateWindowTitles = true;
-  let windowTitleOpeningTag = "[";
-  let windowTitleClosingTag = "]";
-
   browser.windows.getAll({populate: false, windowTypes: ["normal"],})
     .then(
       (windows) => {
@@ -65,15 +61,7 @@ function refreshTabMenu(details) {
         console.log(`found ${nonFocusedWindows.length} non focused windows`);
         for (const window of nonFocusedWindows) {
 
-          // Simplify window titles when used with the Window Title extension
           let windowTitle = window.title;
-          if (truncateWindowTitles && windowTitle.startsWith(windowTitleOpeningTag)) {
-            let end = windowTitle.indexOf(windowTitleClosingTag);
-            if (end > 0) {
-              windowTitle = windowTitle.slice(0, end + 1);
-            }
-          }
-
           browser.menus.create(
             {
               id: `right-window-${window.id}`,
@@ -189,8 +177,16 @@ function onMenuItemClicked(menusOnClickData) {
   );
 }
 
-browser.menus.onClicked.addListener(onMenuItemClicked);
+async function onMessageReceived(msg) {
+  // TODO remove this?
+  console.log(`received msg ${JSON.stringify(msg)}`);
+  if (msg.action && msg.action === 'optionsSaved') {
+    refreshTabMenu(null);
+  }
+}
 
+browser.menus.onClicked.addListener(onMenuItemClicked);
+browser.runtime.onMessage.addListener(onMessageReceived);
 browser.runtime.onInstalled.addListener(refreshTabMenu);
 browser.windows.onCreated.addListener(refreshTabMenu);
 browser.windows.onFocusChanged.addListener(refreshTabMenu);
